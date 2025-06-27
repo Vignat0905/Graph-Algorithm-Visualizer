@@ -1,167 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>Tile Grid</title>
-	<link rel="stylesheet" href="style.css">
+    <title>Path Finder Algorithm Visualizer</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="path">
-	<div class="grid-container"></div>
-	<script>
-		const gridContainer = document.querySelector('.grid-container');
-		const width = gridContainer.offsetWidth;
-		const height = width * 15 / 37; // Set height to be 15/37 of the width
-	
-		gridContainer.style.height = `${height}px`; // Set the height of the container using the style property
-	</script>
-
-	<div class="bottom-container">
-		<div class="container">
-			<div class="algorithm-container">
-				<div class="button-container">
-					<button class="alg-buttons" onclick="bfs()">BFS</button>
-					<button class="alg-buttons" onclick="dfs()">DFS</button>
-				</div>
-				<div class="button-container">
-					<button class="alg-buttons" onclick="dijkstra('euclidean')">Dijkstra Euclidean</button>
-					<button class="alg-buttons" onclick="dijkstra('manhattan')">Dijkstra Manhattan</button>
-				</div>
-				<div class="button-container">
-					<button class="alg-buttons" onclick="aStar('euclidean')">A* Euclidean</button>
-					<button class="alg-buttons" onclick="aStar('manhattan')">A* Manhattan</button>
-				</div>
-				<div class="button-container">
-					<button class="alg-buttons" onclick="greedyBFS('euclidean')">Greedy BFS Euclidean</button>
-					<button class="alg-buttons" onclick="greedyBFS('manhattan')">Greedy BFS Manhattan</button>
-				</div>
-			</div>
-			<div class="main-button-container">
-				<div class="tile-button-container">
-					<div class="tile-button-icons">
-						<button class="tilebut1" onclick="changeColor('green')">Start Tile</button>
-						<button class="tilebut2" onclick="changeColor('red')">End Tile</button>
-						<button class="tilebut3" onclick="changeColor('black')">Wall Tile</button>
-					</div>
-					<div class="info-stuff">
-						<button data-info-target="#info" class="alg-buttons">How to Use</button>
-					</div>
-				</div>
-			</div>
-			<div class="maze-random-container">
-				<div class="maze-reset">
-					<div class="maze-button">
-						<button class="alg-buttons" onclick="maze()">Create Maze</button>
-					</div>
-					<div class="reset-button">
-						<button class="alg-buttons" onclick="reset()">Reset</button>
-					</div>
-				</div>
-				<div class="input-container">
-					<div class="text-slider">
-						<label for="mySlider" onclick="updateRandom()">Random Tilemap</label>
-					</div>
-					<div class="slider-container">
-						<input class="range-style" type="range" min="0.1" max="0.25" step="0.01" value="0.175" id="mySlider" onchange="updateRandom()">
-					</div>
-				</div>
-				<div class="sorting-button">
-					<button class="alg-buttons">
-						<a href="sorting.html" style="color: inherit; text-decoration: none;">Sorting Algorithm Visualizer</a>
-					</button>
-					<button class="alg-buttons" id="source-code">
-						<a href="https://github.com/btschneid/Pathfinding-and-Sorting-Visualizer" target="_blank" style="color: inherit; text-decoration: none;">Source Code</a>
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<div class="info" id="info">
-		<div class="page1">
-			<div class="info-header">
-				<div class="info-title">How to Use</div>
-				<button data-close-button class="close-button">&times;</button>
-			</div>
-			<div class="info-body">
-				<div class="info-body-text">
-					<div class="start-info">
-						<div class="info-sub-text">
-							To set the starting point, click on the Start Tile button and then click on any tile
-						</div>
-						<button class="tilebut1">Start Tile</button>
-					</div>
-					<div class="end-info">
-						<div class="info-sub-text">
-							To set the ending point, click on the End Tile button and then click on any tile
-						</div>
-						<button class="tilebut2">End Tile</button>
-					</div>
-					<div class="wall-info">
-						<div class="info-sub-text">
-							To set the walls, click on the Wall Tile button and then click or drag on any tile
-						</div>
-						<button class="tilebut3">Wall Tile</button>
-					</div>
-					<div class="start-alg-info">
-						Click any of the algorithms to visualize how they work
-					</div>
-				</div>
-				<div class="right-side-container">
-					<div class="part1-gif-container">
-						<img class="part1-gif" src="videos/part1.gif" alt="animated GIF">
-					</div>
-					<div class="info-footer-page2">
-						<button class="alg-buttons" onclick="togglePages()">Advanced Features --></button>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="page2" id="advanced-info" style="display: none;">
-			<div class="info-header">
-				<div class="info-title">Advanced Features</div>
-				<button data-close-button class="close-button">&times;</button>
-			</div>
-			<div class="info-body">
-				<div class="info-body-text-page2">
-					<div class="drag-info">
-						<div class="info-sub-text">
-							After running an algorithm, you can visualize it from various angles by dragging the start or end positions
-						</div>
-					</div>
-					<div class="maze-info">
-						<div class="info-sub-text">
-							Click the Create Maze button to create a random maze using the Depth First Search algorithm
-						</div>
-						<button class="alg-buttons">Create Maze</button>
-					</div>
-					<div class="random-info">
-						<div class="info-sub-text">
-							Click or drag the Random Tilemap Slider to set a random tilemap with a lower or higher ratio of walls
-						</div>
-						<div class="input-container">
-							<div class="text-slider">
-								<label for="mySlider">Random Tilemap</label>
-							</div>
-							<div class="slider-container">
-								<input class="range-style" type="range" min="0.1" max="0.25" step="0.01" value="0.175" id="mySlider">
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="right-side-container">
-					<img class="part2-gif" src="videos/part2.gif" alt="animated GIF">
-				</div>
-			</div>
-			<div class="info-footer-page1">
-				<button class="alg-buttons" onclick="resetPages()"><-- How to Use</button>
-			</div>
-		</div>
-		
-	</div>
-	<div id="overlay"></div>
-	
-	
-
-	<script src="js/index.js"></script>
-	
+    <div class="home-container">
+        <h1>Path Finder Algorithm Visualizer</h1>
+        <div class="algorithm-selection">
+            <select id="algorithm">
+                <option value="bfs">BFS</option>
+                <option value="dfs">DFS</option>
+                <option value="dijkstra-euclidean">Dijkstra</option>
+            </select>
+            <button onclick="visualize()">Visualize</button>
+        </div>
+    </div>
+    <script>
+        function visualize() {
+            const algorithm = document.getElementById('algorithm').value;
+            localStorage.setItem('selectedAlgorithm', algorithm);
+            window.location.href = 'grid.html';
+        }
+    </script>
 </body>
 </html>

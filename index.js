@@ -9,15 +9,15 @@ const visitedAnimation = (t, color) => {
   t.element.style.opacity = 1;
   t.element.style.transition = 'opacity 0.4s ease-in-out';
 
-  t.element.addEventListener('transitionend', function() {
+  t.element.addEventListener('transitionend', function () {
     t.element.style.transition = '';
   });
 }
 
 const wallColor = 'black';
 const emptyTileColor = 'white';
-const visitedTileColor = '#75a7e6';
-const finalPathTileColor = '#f5ff5e'
+const visitedTileColor = '#3d5a80';
+const finalPathTileColor = '#f7b801'
 const startTileColor = 'green';
 const finalTileColor = 'red';
 
@@ -32,6 +32,58 @@ let isMouseDown = false;
 let currentAlg = -1;
 let pathFindingDone = false;
 let clickedOnToMove = -1;
+let selectionStep = 0;
+
+const guideUser = () => {
+  const stepInfo = document.getElementById('step-info');
+  const mazeButton = document.querySelector('.maze-button');
+  if (selectionStep === 0) {
+    stepInfo.textContent = "Step 1: Select the wall tiles.";
+    selectedColor = wallColor;
+    mazeButton.classList.remove('hidden');
+  } else if (selectionStep === 1) {
+    stepInfo.textContent = "Step 2: Select the start tile.";
+    selectedColor = startTileColor;
+    mazeButton.classList.add('hidden');
+  } else if (selectionStep === 2) {
+    stepInfo.textContent = "Step 3: Select the end tile.";
+    selectedColor = finalTileColor;
+  } else if (selectionStep === 3) {
+    stepInfo.textContent = "Step 4: Start the algorithm.";
+    Swal.fire({
+      title: 'Start Algorithm?',
+      text: "Do you want to start the algorithm?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes',
+      cancelButtonText: 'No'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const selectedAlgorithm = localStorage.getItem('selectedAlgorithm');
+        if (selectedAlgorithm) {
+          if (selectedAlgorithm === 'bfs') {
+            bfs();
+          } else if (selectedAlgorithm === 'dfs') {
+            dfs();
+          } else if (selectedAlgorithm === 'dijkstra-euclidean') {
+            dijkstra('euclidean');
+          } else if (selectedAlgorithm === 'dijkstra-manhattan') {
+            dijkstra('manhattan');
+          }
+        }
+      } else {
+        reset();
+      }
+    });
+  }
+}
+
+const nextStep = () => {
+  if (selectionStep < 3) {
+    selectionStep++;
+    guideUser();
+  }
+}
 
 class Tile {
   constructor(number, r, c) {
@@ -72,27 +124,31 @@ class Tile {
 
   handleClick = () => {
     if (editMode) {
-      if (selectedColor === startTileColor) {
+      if (selectionStep === 0 && selectedColor === wallColor) {
+        if (this.isTileWall()) {
+          this.setTileNotWall();
+          this.element.style.backgroundColor = emptyTileColor;
+        } else {
+          this.setTileWall();
+          visitedAnimation(this, selectedColor);
+        }
+      } else if (selectionStep === 1 && selectedColor === startTileColor) {
         if (previousStartTile) {
           previousStartTile.element.style.backgroundColor = emptyTileColor;
         }
-  
         this.setTileNotWall();
         startTile = this.number;
         previousStartTile = this;
-      }
-  
-      if (selectedColor === finalTileColor) {
+        visitedAnimation(this, selectedColor);
+      } else if (selectionStep === 2 && selectedColor === finalTileColor) {
         if (previousEndTile) {
           previousEndTile.element.style.backgroundColor = emptyTileColor;
         }
-          
         this.setTileNotWall();
         endTile = this.number;
         previousEndTile = this;
+        visitedAnimation(this, selectedColor);
       }
-      
-      visitedAnimation(this, selectedColor);
     }
 
     if (selectedColor === wallColor) {
@@ -118,9 +174,9 @@ class Tile {
     tile.style.width = size + 'px';
     tile.style.height = size + 'px';
     tile.addEventListener('click', this.handleClick.bind(this));
-    
+
     tile.addEventListener('mousedown', () => {
-      isMouseDown = true;   
+      isMouseDown = true;
     });
 
     tile.addEventListener('mousemove', () => {
@@ -147,13 +203,13 @@ class Tile {
             if (previousEndTile) {
               previousEndTile.element.style.backgroundColor = emptyTileColor;
             }
-      
+
             this.setTileNotWall();
             endTile = this.number;
             previousEndTile = this;
             this.element.style.backgroundColor = finalTileColor;
           }
-          
+
         }
 
         if (clickedOnToMove == 1) {
@@ -161,13 +217,13 @@ class Tile {
             if (previousStartTile) {
               previousStartTile.element.style.backgroundColor = emptyTileColor;
             }
-      
+
             this.setTileNotWall();
             startTile = this.number;
             previousStartTile = this;
             this.element.style.backgroundColor = startTileColor;
           }
-          
+
         }
 
         if (currentAlg == 0) {
@@ -180,34 +236,25 @@ class Tile {
           dijTime(0, 'manhattan');
         } else if (currentAlg == 4) {
           astarTime(0, 'euclidean');
-        } else if (currentAlg == 5) {
-          astarTime(0, 'manhattan');
-        } else if (currentAlg == 6) {
-          greedyTime(0, 'euclidean');
-        } else if (currentAlg == 7) {
-          greedyTime(0, 'manhattan');
         }
       }
 
 
     });
-    
+
     document.addEventListener('mouseup', () => {
       isMouseDown = false;
     });
-    
+
     this.element = tile;
     return tile;
   }
-  
+
 }
 
-
-
-
-
-
-
+const navigateHome = () => {
+  window.location.href = 'index.html';
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CREATING GRID
@@ -227,7 +274,7 @@ window.addEventListener("resize", () => {
   const gridContainer = document.querySelector(".grid-container");
   let width = gridContainer.offsetWidth;
   let height = width * 15 / 37; // Set height to be 15/37 of the width
-	
+
   gridContainer.style.height = `${height}px`; // Set the height of the container using the style property
   tileSize = width / 37 - 2;
   updateTileSize2();
@@ -313,10 +360,11 @@ async function reset() {
   editMode = true;
   currentAlg = -1;
   pathFindingDone = false;
-  //await delay(25);
-  visitedTiles = []
+  visitedTiles = [];
   selectedColor = '';
+  selectionStep = 0;
   createTiles();
+  guideUser();
 }
 
 // Changes the color of the tile
@@ -325,109 +373,10 @@ const changeColor = (color) => {
   selectedColor = color;
 }
 
-window.onload = function() {
+window.onload = function () {
   createTiles();
+  guideUser();
 }
-
-const slider = document.getElementById("mySlider");
-const defaultValue = slider.defaultValue;
-
-function updateRandom() {
-  const value = slider.value;
-  random(value);
-}
-
-async function random(ratio) {
-  reset();
-  await delay(25);
-  for (let i = 0; i < tiles.length; i++) {
-    let randomNumber = Math.random();
-    if (randomNumber < ratio) {
-      tiles[i].setTileWall();
-      visitedAnimation(tiles[i], wallColor);
-    } 
-  }
-  let tiles2 = tiles;
-
-  let startIndex = Math.floor(Math.random() * tiles2.length);
-  tiles2.slice(startIndex, 1);
-  let endIndex = Math.floor(Math.random() * tiles2.length);
-
-  startTile = startIndex;
-  visitedAnimation(tiles[startIndex], startTileColor);
-  tiles[startIndex].setTileNotWall()
-  previousStartTile = tiles[startIndex];
-
-  endTile = endIndex;
-  visitedAnimation(tiles[endIndex], finalTileColor);
-  tiles[endIndex].setTileNotWall()
-  previousEndTile = tiles[endIndex];
-}
-
-
-
-/////////////////////////////////////////////
-// Info Stuff
-/////////////////////////////////////////////
-const openInfoButtons = document.querySelectorAll('[data-info-target]');
-const closeInfoButtons = document.querySelectorAll('[data-close-button]');
-const page1 = document.querySelector('.page1');
-const page2 = document.querySelector('.page2');
-const overlay = document.getElementById('overlay');
-
-openInfoButtons.forEach(button => {
-  button.addEventListener('click', () => {
-    const info = document.querySelector(button.dataset.infoTarget);
-    openInfo(info);
-  });
-});
-
-overlay.addEventListener('click', () => {
-  const infos = document.querySelectorAll('.info.active');
-  infos.forEach(info => {
-    closeInfo(info);
-  });
-});
-
-closeInfoButtons.forEach(button => {
-  button.addEventListener('click', () => {
-    const info = button.closest('.info');
-    closeInfo(info);
-  });
-});
-
-function openInfo (info) {
-  if (info == null) return;
-  info.classList.add('active');
-  overlay.classList.add('active');
-}
-
-function closeInfo (info) {
-  if (info == null) return;
-  info.classList.remove('active');
-  overlay.classList.remove('active');
-  setTimeout(() => {
-    resetPages();
-  }, 100);
-}
-
-function togglePages() {
-  page1.style.display = 'none';
-  page2.style.display = 'block';
-}
-
-function resetPages() {
-  page2.style.display = 'none';
-  page1.style.display = 'block';
-}
-
-
-
-
-
-
-
-
 
 
 
@@ -443,7 +392,7 @@ const buildGraph = () => {
   for (let i = 0; i < tiles.length; i++) {
     const tile = tiles[i];
     graph[tile.number] = [];
-    
+
     for (let j = 0; j < tile.neighbors.length; j++) {
       const neighbor = tile.neighbors[j];
       graph[tile.number].push(neighbor.number);
@@ -467,12 +416,25 @@ const checkToStart = () => {
   return (endTile > -1 && startTile > -1);
 }
 
+const displayStepCount = (count) => {
+  const stepCountElement = document.getElementById('step-count');
+  stepCountElement.textContent = `Number of steps: ${count}`;
+  Swal.fire({
+    title: 'Algorithm Completed!',
+    text: `The algorithm completed in ${count} steps.`,
+    icon: 'success',
+    confirmButtonText: 'OK'
+  });
+}
 
-
-
-
-
-
+const displayNoPathMessage = () => {
+  Swal.fire({
+    title: 'No Path Available!',
+    text: 'There is no available path from the start tile to the end tile.',
+    icon: 'error',
+    confirmButtonText: 'OK'
+  });
+}
 
 ///////////////////////
 // BFS
@@ -486,7 +448,7 @@ const bfs = () => {
 }
 
 async function bfsTime(delayTime) {
-  await delay(50);
+  await delay(300);
   selectedColor = '';
   if (!checkToStart()) {
     return;
@@ -501,16 +463,17 @@ async function bfsTime(delayTime) {
   const prev = {};
   let endNode = null;
   resetVisitedTiles();
+  let stepCount = 0;
 
-  outerLoop : while (queue.length > 0) {
+  outerLoop: while (queue.length > 0) {
     if (resetOn) {
       return;
     }
     if (delayTime > 0) {
       await delay(delayTime);
-    } 
+    }
     const [node, distance] = queue.shift();
-    
+
     if (node == endTile) {
       endNode = node;
       break;
@@ -527,7 +490,7 @@ async function bfsTime(delayTime) {
             visitedAnimation(tiles[neighbor], visitedTileColor);
           }
           visitedTiles.push(tiles[neighbor]);
-        } 
+        }
         prev[neighbor] = node;
         if (endTile == neighbor) {
           endNode = neighbor;
@@ -536,30 +499,43 @@ async function bfsTime(delayTime) {
       }
     }
   }
+  // print(endNode);
+  if (!endNode) {
+    displayNoPathMessage();
+    return;
+  }
 
   // Color the path from end to start
-  let node = endNode;
+  let node = endNode, total = 0;
   while (node != startTile && !resetOn) {
+    total++;
+    node = prev[node];
+  }
+  node = endNode;
+  while (node != startTile && !resetOn) {
+    stepCount++;
     if (node !== endNode) {
-
       if (delayTime == 0) {
         tiles[node].element.style.backgroundColor = finalPathTileColor;
       } else {
+        // console.log("HI");
         visitedAnimation(tiles[node], finalPathTileColor);
-        await delay(delayTime); 
+        await delay(delayTime);
       }
     }
+    tiles[node].element.textContent = total - stepCount + 1;
+    tiles[node].element.style.fontSize = '24px'; // Set font size
+    tiles[node].element.style.fontWeight = 'bold'; // Make text bold
+    tiles[node].element.style.color = 'black'; // Set text color
+    tiles[node].element.style.textAlign = 'center'; // Center text horizontally
+    tiles[node].element.style.lineHeight = '1.5';
+    // tiles[node].element.style.backgroundColor = '; // Highlight background
     node = prev[node];
   }
 
   pathFindingDone = true;
-  
+  displayStepCount(stepCount); // Include the end tile
 }
-
-
-
-
-
 
 ///////////////////////
 // DFS
@@ -572,83 +548,192 @@ const dfs = () => {
   dfsTime(30)
 }
 
+// async function dfsTime(delayTime) {
+//   await delay(50);
+//   selectedColor = '';
+//   if (!checkToStart()) {
+//     return;
+//   }
+
+//   editMode = false;
+//   resetOn = false;
+//   updateTileNeighbors();
+//   const graph = buildGraph();
+//   const visited = new Set([startTile]);
+//   const array = [[startTile, 0]];
+//   const prev = {};
+//   let endNode = null;
+//   resetVisitedTiles();
+//   let stepCount = 0;
+
+//   outerLoop : while (array.length > 0) {
+//     if (resetOn) {
+//       return;
+//     }
+//     if (delayTime > 0) {
+//       await delay(delayTime);
+//     } 
+//     const [node, distance] = array.pop();
+
+//     if (node == endTile) {
+//       endNode = node;
+//       break;
+//     }
+
+//     for (let neighbor of graph[node]) {
+//       if (!visited.has(neighbor)) {
+//         visited.add(neighbor);
+//         array.push([neighbor, distance + 1]);
+//         if (neighbor !== startTile && neighbor !== endTile) {
+//           if (delayTime == 0) {
+//             tiles[neighbor].element.style.backgroundColor = visitedTileColor;
+//           } else {
+//             visitedAnimation(tiles[neighbor], visitedTileColor);
+//           }
+//           visitedTiles.push(tiles[neighbor]);
+//         } 
+//         prev[neighbor] = node;
+//         if (endTile == neighbor) {
+//           endNode = neighbor;
+//           break outerLoop;
+//         }
+//       }
+//     }
+//   }
+
+//   if (!endNode) {
+//     displayNoPathMessage();
+//     return;
+//   }
+
+//   // Color the path from end to start
+//   let node = endNode,total=0;
+//   while (node != startTile && !resetOn) {
+//     total++;
+//     node = prev[node];
+//   }
+//   node=endNode;
+//   while (node != startTile && !resetOn) {
+//     stepCount++;
+//     if (node !== endNode) {
+//       if (delayTime == 0) {
+//         tiles[node].element.style.backgroundColor = finalPathTileColor;
+//       } else {
+//         visitedAnimation(tiles[node], finalPathTileColor);
+//         await delay(delayTime); 
+//       }
+//     }
+//     tiles[node].element.textContent=total-stepCount+1; 
+//     tiles[node].element.style.fontSize = '24px'; // Set font size
+//     tiles[node].element.style.fontWeight = 'bold'; // Make text bold
+//     tiles[node].element.style.color = 'black'; 
+//     tiles[node].element.style.textAlign = 'center'; // Center text horizontally
+//     tiles[node].element.style.lineHeight = '1.5';
+//     node = prev[node];
+//   }
+
+//   pathFindingDone = true;
+//   displayStepCount(stepCount); // Include the end tile
+// }
+// Helper function to shuffle array randomly
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 async function dfsTime(delayTime) {
   await delay(50);
   selectedColor = '';
-  if (!checkToStart()) {
-    return;
-  }
+  if (!checkToStart()) return;
 
   editMode = false;
   resetOn = false;
   updateTileNeighbors();
   const graph = buildGraph();
-  const visited = new Set([startTile]);
-  const array = [[startTile, 0]];
+  const visited = new Set();
   const prev = {};
   let endNode = null;
   resetVisitedTiles();
+  let stepCount = 0;
 
-  outerLoop : while (array.length > 0) {
-    if (resetOn) {
+  async function dfsRecursive(node) {
+    if (resetOn || endNode) return;
+    visited.add(node);
+
+    // Color current node
+    if (node !== startTile && node !== endTile) {
+      if (delayTime == 0) {
+        tiles[node].element.style.backgroundColor = visitedTileColor;
+      } else {
+        visitedAnimation(tiles[node], visitedTileColor);
+        await delay(delayTime);
+      }
+      visitedTiles.push(tiles[node]);
+    }
+
+    // Found end tile
+    if (node === endTile) {
+      endNode = node;
       return;
     }
-    if (delayTime > 0) {
-      await delay(delayTime);
-    } 
-    const [node, distance] = array.pop();
-    
-    if (node == endTile) {
-      endNode = node;
-      break;
-    }
 
-    for (let neighbor of graph[node]) {
+    // Get neighbors and shuffle them randomly
+    let neighbors = [...graph[node]];
+    neighbors = shuffleArray(neighbors);
+
+    // Recursively visit unvisited neighbors
+    for (let neighbor of neighbors) {
       if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        array.push([neighbor, distance + 1]);
-        if (neighbor !== startTile && neighbor !== endTile) {
-          if (delayTime == 0) {
-            tiles[neighbor].element.style.backgroundColor = visitedTileColor;
-          } else {
-            visitedAnimation(tiles[neighbor], visitedTileColor);
-          }
-          visitedTiles.push(tiles[neighbor]);
-        } 
         prev[neighbor] = node;
-        if (endTile == neighbor) {
-          endNode = neighbor;
-          break outerLoop;
-        }
+        await dfsRecursive(neighbor);
       }
     }
   }
 
-  // Color the path from end to start
-  let node = endNode;
+  // Start DFS from start tile
+  await dfsRecursive(startTile);
+
+  // Rest of your path coloring code...
+  if (!endNode) {
+    displayNoPathMessage();
+    return;
+  }
+
+  let node = endNode, total = 0;
   while (node != startTile && !resetOn) {
+    total++;
+    node = prev[node];
+  }
+
+  node = endNode;
+  while (node != startTile && !resetOn) {
+    stepCount++;
     if (node !== endNode) {
       if (delayTime == 0) {
         tiles[node].element.style.backgroundColor = finalPathTileColor;
       } else {
         visitedAnimation(tiles[node], finalPathTileColor);
-        await delay(delayTime); 
+        await delay(delayTime);
       }
     }
+    tiles[node].element.textContent = total - stepCount + 1;
+    tiles[node].element.style.fontSize = '24px';
+    tiles[node].element.style.fontWeight = 'bold';
+    tiles[node].element.style.color = 'black';
+    tiles[node].element.style.textAlign = 'center';
+    tiles[node].element.style.lineHeight = '1.5';
     node = prev[node];
   }
 
   pathFindingDone = true;
-  
+  displayStepCount(stepCount);
 }
 
-
-
-
-
-
 ///////////////////////
-// Dijkstra
+// Dijkstrax
 ///////////////////////
 
 const addToQueueDij = (queue, tile, type) => {
@@ -704,14 +789,15 @@ async function dijTime(delayTime, type) {
   let endNode = null;
   resetVisitedTiles();
   resetOn = false;
+  let stepCount = 0;
 
-  outerLoop : while (prioQueue.length > 0) {
+  outerLoop: while (prioQueue.length > 0) {
     if (resetOn) {
       return;
     }
     if (delayTime > 0) {
       await delay(delayTime);
-    } 
+    }
 
     const [node, distance] = prioQueue.shift();
 
@@ -719,12 +805,12 @@ async function dijTime(delayTime, type) {
       endNode = node;
       break;
     }
-    
+
     for (let neighbor of graph[node]) {
       if (!visited.has(neighbor)) {
         visited.add(neighbor);
         prioQueue = addToQueueDij(prioQueue, neighbor, type);
-        
+
         if (neighbor !== startTile && neighbor !== endTile) {
           if (delayTime == 0) {
             tiles[neighbor].element.style.backgroundColor = visitedTileColor;
@@ -732,7 +818,7 @@ async function dijTime(delayTime, type) {
             visitedAnimation(tiles[neighbor], visitedTileColor);
           }
           visitedTiles.push(tiles[neighbor]);
-        } 
+        }
         prev[neighbor] = node;
         if (endTile == neighbor) {
           endNode = neighbor;
@@ -740,39 +826,42 @@ async function dijTime(delayTime, type) {
         }
       }
     }
+  }
 
-    
+  if (!endNode) {
+    displayNoPathMessage();
+    return;
   }
 
   // Color the path from end to start
-  let node = endNode;
+  let node = endNode, total = 0;
   while (node != startTile && !resetOn) {
+    total++;
+    node = prev[node];
+  }
+  node = endNode;
+  while (node != startTile && !resetOn) {
+    stepCount++;
     if (node !== endNode) {
       if (delayTime == 0) {
         tiles[node].element.style.backgroundColor = finalPathTileColor;
       } else {
         visitedAnimation(tiles[node], finalPathTileColor);
-        await delay(delayTime); 
+        await delay(delayTime);
       }
     }
+    tiles[node].element.textContent = total - stepCount + 1;
+    tiles[node].element.style.fontSize = '24px'; // Set font size
+    tiles[node].element.style.fontWeight = 'bold'; // Make text bold
+    tiles[node].element.style.color = 'black';
+    tiles[node].element.style.textAlign = 'center'; // Center text horizontally
+    tiles[node].element.style.lineHeight = '1.5';
     node = prev[node];
   }
 
-  // Color the path from end to start
-
   pathFindingDone = true;
+  displayStepCount(stepCount); // Include the end tile
 }
-
-
-
-
-
-
-
-
-///////////////////////
-// AStar
-///////////////////////
 
 const getRow = (num) => {
   return Math.floor(num / gridSizeX);
@@ -781,262 +870,6 @@ const getRow = (num) => {
 const getCol = (num) => {
   return num % gridSizeX;
 }
-
-const calculateFCost = (tile, type) => {
-  let gCost, hCost = -1;
-  let endR = getRow(endTile);
-  let endC = getCol(endTile);
-  let startR = getRow(startTile);
-  let startC = getCol(startTile);
-
-  if (type == 'euclidean') {
-    gCost = Math.sqrt(Math.pow(getCol(tile) - startC, 2) + Math.pow(getRow(tile) - startR, 2));
-    hCost = Math.sqrt(Math.pow(getCol(tile) - endC, 2) + Math.pow(getRow(tile) - endR, 2));
-  } else if (type == 'manhattan') {
-    gCost = Math.abs(getCol(tile) - startC) + Math.abs(getRow(tile) - startR);
-    hCost = Math.abs(getCol(tile) - endC) + Math.abs(getRow(tile) - endR);
-  } else {
-    gCost = Math.abs(getCol(tile) - startC) + Math.abs(getRow(tile) - startR);
-    hCost = Math.abs(getCol(tile) - endC) + Math.abs(getRow(tile) - endR);
-  }
-
-  return gCost + hCost;
-}
-
-const addToQueue = (queue, tile, type) => {
-  const fCost = calculateFCost(tile, type);
-  const newItem = [tile, fCost];
-
-  let i = 0;
-
-  // Iterate through the queue and find the index where the new item should be inserted based on its fCost
-  while (i < queue.length && queue[i][1] <= fCost) {
-    i++;
-  }
-
-  // Insert the new item at the correct index
-  queue.splice(i, 0, newItem);
-
-  return queue;
-}
-
-
-const aStar = (type) => {
-  resetOn = true;
-  pathFindingDone = false;
-  if (type === 'euclidean') {
-    currentAlg = 4;
-  } else {
-    currentAlg = 5;
-  }
-  astarTime(30, type)
-}
-
-async function astarTime(delayTime, type) {
-  await delay(50);
-  selectedColor = '';
-  if (!checkToStart()) {
-    return;
-  }
-
-  editMode = false;
-  resetOn = false;
-  updateTileNeighbors();
-  const graph = buildGraph();
-  const visited = new Set([startTile]);
-  let prioQueue = [[startTile, calculateFCost(startTile, type)]];
-  const prev = {};
-  let endNode = null;
-  resetVisitedTiles();
-
-  outerLoop : while (prioQueue.length > 0) {
-    if (resetOn) {
-      return;
-    }
-    if (delayTime > 0) {
-      await delay(delayTime);
-    } 
-
-    const [node, fCost] = prioQueue.shift();
-
-    if (node == endTile) {
-      endNode = node;
-      break;
-    }
-    
-    for (let neighbor of graph[node]) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        prioQueue = addToQueue(prioQueue, neighbor, type);
-        
-        if (neighbor !== startTile && neighbor !== endTile) {
-          if (delayTime == 0) {
-            tiles[neighbor].element.style.backgroundColor = visitedTileColor;
-          } else {
-            visitedAnimation(tiles[neighbor], visitedTileColor);
-          }
-          visitedTiles.push(tiles[neighbor]);
-        } 
-        prev[neighbor] = node;
-        if (endTile == neighbor) {
-          endNode = neighbor;
-          break outerLoop;
-        }
-      }
-    }
-
-    
-  }
-
-  // Color the path from end to start
-  let node = endNode;
-  while (node != startTile && !resetOn) {
-    if (node !== endNode) {
-      if (delayTime == 0) {
-        tiles[node].element.style.backgroundColor = finalPathTileColor;
-      } else {
-        visitedAnimation(tiles[node], finalPathTileColor);
-        await delay(delayTime); 
-      }
-    }
-    node = prev[node];
-  }
-
-  // Color the path from end to start
-
-  pathFindingDone = true;
-}
-
-
-
-
-
-
-
-
-///////////////////////
-// Greedy BFS
-///////////////////////
-
-const addToQueueGreed = (queue, tile, type) => {
-  let endR = getRow(endTile);
-  let endC = getCol(endTile);
-  let dis = -1;
-
-  if (type === 'euclidean') {
-    dis = Math.sqrt(Math.pow(getCol(tile) - endC, 2) + Math.pow(getRow(tile) - endR, 2));
-  } else if (type === 'manhattan') {
-    dis = Math.abs(getCol(tile) - endC) + Math.abs(getRow(tile) - endR);
-  }
-
-  const newItem = [tile, dis];
-
-  let i = 0;
-
-  // Iterate through the queue and find the index where the new item should be inserted based on its fCost
-  while (i < queue.length && queue[i][1] <= dis) {
-    i++;
-  }
-
-  // Insert the new item at the correct index
-  queue.splice(i, 0, newItem);
-
-  return queue;
-}
-
-const greedyBFS = (type) => {
-  resetOn = true;
-  pathFindingDone = false;
-  if (type === 'euclidean') {
-    currentAlg = 6;
-  } else {
-    currentAlg = 7;
-  }
-  greedyTime(30, type)
-}
-
-async function greedyTime(delayTime, type) {
-  await delay(50);
-  selectedColor = '';
-  if (!checkToStart()) {
-    return;
-  }
-
-  editMode = false;
-  resetOn = false;
-  updateTileNeighbors();
-  const graph = buildGraph();
-  const visited = new Set([startTile]);
-  let prioQueue = [[startTile, 0]];
-  const prev = {};
-  let endNode = null;
-  resetVisitedTiles();
-
-  outerLoop : while (prioQueue.length > 0) {
-    if (resetOn) {
-      return;
-    }
-    if (delayTime > 0) {
-      await delay(delayTime);
-    } 
-
-    const [node, distance] = prioQueue.shift();
-
-    if (node == endTile) {
-      endNode = node;
-      break;
-    }
-    
-    for (let neighbor of graph[node]) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        prioQueue = addToQueueGreed(prioQueue, neighbor, type);
-        
-        if (neighbor !== startTile && neighbor !== endTile) {
-          if (delayTime == 0) {
-            tiles[neighbor].element.style.backgroundColor = visitedTileColor;
-          } else {
-            visitedAnimation(tiles[neighbor], visitedTileColor);
-          }
-          visitedTiles.push(tiles[neighbor]);
-        } 
-        prev[neighbor] = node;
-        if (endTile == neighbor) {
-          endNode = neighbor;
-          break outerLoop;
-        }
-      }
-    }
-
-    
-  }
-
-  // Color the path from end to start
-  let node = endNode;
-  while (node != startTile && !resetOn) {
-    if (node !== endNode) {
-      if (delayTime == 0) {
-        tiles[node].element.style.backgroundColor = finalPathTileColor;
-      } else {
-        visitedAnimation(tiles[node], finalPathTileColor);
-        await delay(delayTime); 
-      }
-    }
-    node = prev[node];
-  }
-
-  // Color the path from end to start
-
-  pathFindingDone = true;
-}
-
-
-
-
-
-
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1063,7 +896,7 @@ async function maze() {
     } else {
       openTiles.push(tiles[i]);
     }
-    
+
   }
   createMazeNeighbors();
   dfsMaze();
@@ -1104,7 +937,7 @@ const buildMazeGraph = () => {
   for (let i = 0; i < openTiles.length; i++) {
     const tile = openTiles[i];
     graph[tile.number] = [];
-    
+
     for (let j = 0; j < tile.neighbors.length; j++) {
       const neighbor = tile.neighbors[j];
       graph[tile.number].push(neighbor.number);
@@ -1151,12 +984,12 @@ async function dfsMaze() {
   let neighbor = neighbors[0];
   let node = stack[0];
 
-  outerLoop : while (stack.length != 0) {
+  outerLoop: while (stack.length != 0) {
     node = stack[stack.length - 1];
-    
+
     if (delayTime > 0) {
       await delay(delayTime);
-    } 
+    }
 
     neighbors = graph[node];
 
@@ -1176,19 +1009,19 @@ async function dfsMaze() {
       continue;
     }
 
-    
+
     if (!visited.has(neighbor)) {
       visited.add(neighbor);
       stack.push(neighbor);
       if (neighbor !== s) {
         visitedAnimation(tiles[neighbor], emptyTileColor);
         visitedTiles.push(tiles[neighbor]);
-      } 
+      }
 
       getRidOfWall(neighbor, node, emptyTileColor);
 
     }
-    
+
   }
 
   for (let i = 0; i < tiles.length; i++) {

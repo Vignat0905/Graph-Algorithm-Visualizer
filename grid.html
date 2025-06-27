@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tile Grid</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="path">
+    <div class="step-info" id="step-info">Step 1: Select the wall tiles.</div>
+    <div class="grid-container"></div>
+    <script>
+        const gridContainer = document.querySelector('.grid-container');
+        const width = gridContainer.offsetWidth;
+        const height = width * 15 / 37; // Set height to be 15/40 of the width
+    
+        gridContainer.style.height = `${height}px`; // Set the height of the container using the style property
+    </script>
+
+    <div class="bottom-container">
+        <div class="container">
+            <div class="button-container">
+                <button class="control-button" onclick="reset()">Reset</button>
+                <button class="control-button" onclick="nextStep()">Next</button>
+                <button class="control-button" onclick="navigateHome()">Home</button>
+                <button class="control-button maze-btn" onclick="maze()">Create Maze</button>
+            </div>
+            <div class="step-count" id="step-count"></div>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+    
+    <script src="./index.js"></script>
+</body>
+</html>
